@@ -8,12 +8,11 @@ use App\Http\Resources\ProductResource;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        return ProductResource::collection(Product::get());
+        $products = Product::with('categories')->get();
+        
+        return ProductResource::collection($products);
     }
 
     /**
@@ -29,7 +28,9 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        //
+        $product->load('categories');
+
+        return new ProductResource($product);
     }
 
     /**
