@@ -14,6 +14,7 @@ class ProductResource extends JsonResource
      * @return array<string, mixed>
      */
    // app/Http/Resources/ProductResource.php
+    public static $wrap = null;
     public function toArray($request)
     {
         return [
