@@ -5,14 +5,28 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use App\Http\Resources\ProductResource;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('categories')->get();
+        $query = Product::query()->with('categories');
+
+        if($request->has('search') && $request->filled('search')){
+
+            $searchTerm=Str::lower($request->search);
+
+            $query->where(function($q) use ($searchTerm) {
+                $q->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+                  ->orWhereRaw('LOWER(description) LIKE ?', ['%' . $searchTerm . '%']);
+            });
+
+        }
+
+        $products = $query->get();
         
-        return ProductResource::collection($products);
+        return response()->json($products);
     }
 
     /**
