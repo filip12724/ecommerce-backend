@@ -11,22 +11,62 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::query()->with('categories');
-
-        if($request->has('search') && $request->filled('search')){
-
-            $searchTerm=Str::lower($request->search);
-
-            $query->where(function($q) use ($searchTerm) {
-                $q->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
-                  ->orWhereRaw('LOWER(description) LIKE ?', ['%' . $searchTerm . '%']);
-            });
-
+        try {
+            $query = Product::query()->with('categories');
+    
+            
+            if ($request->filled('search')) {
+                $validated = $request->validate([
+                    'search' => 'sometimes|string|max:255'
+                ]);
+                
+                $searchTerm = Str::lower(trim($validated['search']));
+                
+                $query->where(function($q) use ($searchTerm) {
+                    $q->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+                      ->orWhereRaw('LOWER(description) LIKE ?', ['%' . $searchTerm . '%']);
+                });
+            }
+    
+          
+            if ($request->filled('sort')) {
+                $validatedSort = $request->validate([
+                    'sort' => 'in:price_asc,price_desc'
+                ]);
+                
+                $sortParts = explode('_', $validatedSort['sort']);
+                $column = $sortParts[0];
+                $direction = $sortParts[1];
+                
+                $query->orderBy($column, $direction);
+            }
+    
+            $products = $query->get();
+    
+            return response()->json([
+                'success' => true,
+                'data' => $products,
+                'meta' => [
+                    'count' => $products->count(),
+                    'search' => $request->search ?: null,
+                    'sort' => $request->sort ?: ''
+                ]
+            ], 200);
+    
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors()
+            ], 422);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error occurred',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-
-        $products = $query->get();
-        
-        return response()->json($products);
     }
 
     /**
