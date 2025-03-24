@@ -41,13 +41,16 @@ class ProductController extends Controller
                 $query->orderBy($column, $direction);
             }
     
-            $products = $query->get();
+            $products = $query->paginate(6);
     
             return response()->json([
                 'success' => true,
                 'data' => $products,
                 'meta' => [
-                    'count' => $products->count(),
+                    'current_page' => $products->currentPage(),
+                    'last_page' => $products->lastPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
                     'search' => $request->search ?: null,
                     'sort' => $request->sort ?: ''
                 ]
